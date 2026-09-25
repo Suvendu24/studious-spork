@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { gotoAsUser, navigateTo } from './helpers/auth';
 
 const INITIAL_BALANCE = '$1,284.50';
 
@@ -26,12 +27,20 @@ async function submitTransaction(
 test('dashboard shows the seeded account, balance and recent transactions', async ({
   page,
 }) => {
-  await page.goto('/');
+  await gotoAsUser(page);
 
   await expect(
     page.getByRole('heading', { name: 'Savings Account' }),
   ).toBeVisible();
   await expect(page.getByTestId('balance')).toHaveText(INITIAL_BALANCE);
+
+  const transactions = page.getByTestId('transaction-list').getByRole('listitem');
+  await expect(transactions).toHaveCount(5);
+  await expect(transactions.first()).toContainText('Card purchase');
+  await expect(transactions.first()).toContainText('−$25.75');
+  await expect(transactions.last()).toContainText('Opening deposit');
+
+  await navigateTo(page, 'Account');
 
   const accountInfo = page.getByTestId('account-info');
   await expect(accountInfo).toContainText('Suvendu Panda');
@@ -39,18 +48,12 @@ test('dashboard shows the seeded account, balance and recent transactions', asyn
   await expect(accountInfo).toContainText('Savings');
   await expect(accountInfo).toContainText('USD');
   await expect(accountInfo).toContainText('Apr 18, 2023');
-
-  const transactions = page.getByTestId('transaction-list').getByRole('listitem');
-  await expect(transactions).toHaveCount(5);
-  await expect(transactions.first()).toContainText('Card purchase');
-  await expect(transactions.first()).toContainText('−$25.75');
-  await expect(transactions.last()).toContainText('Opening deposit');
 });
 
 test('a deposit is added to the top of the recent transactions list', async ({
   page,
 }) => {
-  await page.goto('/');
+  await gotoAsUser(page);
 
   await submitTransaction(page, 'deposit', '120.25', 'Bonus payment');
 
@@ -71,7 +74,7 @@ test('a deposit is added to the top of the recent transactions list', async ({
 test('a withdrawal is recorded as a debit with the running balance', async ({
   page,
 }) => {
-  await page.goto('/');
+  await gotoAsUser(page);
 
   await submitTransaction(page, 'withdrawal', '84.50', 'Utility bill');
 
@@ -87,7 +90,7 @@ test('a withdrawal is recorded as a debit with the running balance', async ({
 test('transactions submitted without a description use a default label', async ({
   page,
 }) => {
-  await page.goto('/');
+  await gotoAsUser(page);
 
   await submitTransaction(page, 'deposit', '10');
   await expect(
@@ -113,7 +116,7 @@ for (const type of ['deposit', 'withdrawal'] as const) {
     test(`${type} rejects the amount "${amount}" without changing the account`, async ({
       page,
     }) => {
-      await page.goto('/');
+      await gotoAsUser(page);
 
       const form = await submitTransaction(page, type, amount);
 
@@ -132,7 +135,7 @@ for (const type of ['deposit', 'withdrawal'] as const) {
 test('amounts with thousands separators and cents are accepted', async ({
   page,
 }) => {
-  await page.goto('/');
+  await gotoAsUser(page);
 
   await submitTransaction(page, 'deposit', '1,000.50');
 
@@ -140,7 +143,7 @@ test('amounts with thousands separators and cents are accepted', async ({
 });
 
 test('editing the amount clears a previous error message', async ({ page }) => {
-  await page.goto('/');
+  await gotoAsUser(page);
 
   const form = await submitTransaction(page, 'withdrawal', '9999');
   await expect(form.getByTestId('withdrawal-error')).toBeVisible();
@@ -152,7 +155,7 @@ test('editing the amount clears a previous error message', async ({ page }) => {
 test('the full balance can be withdrawn, after which further withdrawals fail', async ({
   page,
 }) => {
-  await page.goto('/');
+  await gotoAsUser(page);
 
   await submitTransaction(page, 'withdrawal', '1284.50');
   await expect(page.getByTestId('balance')).toHaveText('$0.00');
@@ -167,7 +170,7 @@ test('the full balance can be withdrawn, after which further withdrawals fail', 
 test('account state survives a reload and can be reset to the demo data', async ({
   page,
 }) => {
-  await page.goto('/');
+  await gotoAsUser(page);
 
   await submitTransaction(page, 'deposit', '300', 'Savings top-up');
   await expect(page.getByTestId('balance')).toHaveText('$1,584.50');

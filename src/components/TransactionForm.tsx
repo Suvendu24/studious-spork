@@ -1,22 +1,28 @@
-import { useId, useState, type FormEvent } from 'react'
-import type { SubmitResult } from '../hooks/useAccount'
-import type { TransactionType } from '../types'
+import { useId, useState, type FormEvent, type RefObject } from 'react'
+import type { OperationResult } from '../hooks/useBanking'
+
+type FormType = 'deposit' | 'withdrawal'
 
 interface TransactionFormProps {
-  type: TransactionType
+  type: FormType
   onSubmit: (
-    type: TransactionType,
+    type: FormType,
     amount: string,
     description?: string,
-  ) => SubmitResult
+  ) => OperationResult
+  amountRef?: RefObject<HTMLInputElement | null>
 }
 
-const labels: Record<TransactionType, { title: string; action: string }> = {
+const labels: Record<FormType, { title: string; action: string }> = {
   deposit: { title: 'Deposit', action: 'Deposit funds' },
   withdrawal: { title: 'Withdraw', action: 'Withdraw funds' },
 }
 
-export function TransactionForm({ type, onSubmit }: TransactionFormProps) {
+export function TransactionForm({
+  type,
+  onSubmit,
+  amountRef,
+}: TransactionFormProps) {
   const amountId = useId()
   const descriptionId = useId()
   const [amount, setAmount] = useState('')
@@ -47,6 +53,7 @@ export function TransactionForm({ type, onSubmit }: TransactionFormProps) {
         <label htmlFor={amountId}>Amount</label>
         <input
           id={amountId}
+          ref={amountRef}
           name="amount"
           inputMode="decimal"
           autoComplete="off"
