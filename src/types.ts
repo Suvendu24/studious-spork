@@ -1,4 +1,8 @@
-export type TransactionType = 'deposit' | 'withdrawal'
+export type TransactionType =
+  | 'deposit'
+  | 'withdrawal'
+  | 'transfer-in'
+  | 'transfer-out'
 
 export interface Transaction {
   id: string
@@ -10,10 +14,14 @@ export interface Transaction {
   description: string
   /** ISO 8601 timestamp. */
   createdAt: string
+  /** Name of the other party, for transfers. */
+  counterparty?: string
 }
 
 export interface Account {
   id: string
+  /** Owner of this account. */
+  userId: string
   accountNumber: string
   accountHolder: string
   accountType: 'Savings'
@@ -25,3 +33,21 @@ export interface Account {
   balanceInCents: number
   transactions: Transaction[]
 }
+
+export interface User {
+  id: string
+  username: string
+  name: string
+  email: string
+  phone: string
+  accountId: string
+}
+
+/** Demo-only credential record. Passwords are plain text on purpose: this POC
+ * has no backend and no real security model. */
+export interface MockCredential {
+  username: string
+  password: string
+}
+
+export type AccountsById = Record<string, Account>

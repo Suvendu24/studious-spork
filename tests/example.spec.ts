@@ -1,7 +1,8 @@
 import { test, expect } from '@playwright/test';
+import { gotoAsUser } from './helpers/auth';
 
 test('user can deposit money', async ({ page }) => {
-  await page.goto('/');
+  await gotoAsUser(page);
 
   await expect(
     page.getByText('Savings Account')
@@ -25,7 +26,7 @@ test('user can deposit money', async ({ page }) => {
 });
 
 test('user can withdraw money', async ({ page }) => {
-  await page.goto('/');
+  await gotoAsUser(page);
 
   const withdrawalForm = page.getByTestId('withdrawal-form');
 
@@ -45,7 +46,7 @@ test('user can withdraw money', async ({ page }) => {
 });
 
 test('user cannot withdraw more than the available balance', async ({ page }) => {
-  await page.goto('/');
+  await gotoAsUser(page);
 
   const withdrawalForm = page.getByTestId('withdrawal-form');
 

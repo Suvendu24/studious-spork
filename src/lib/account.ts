@@ -11,6 +11,9 @@ export interface AccountError {
     | 'TOO_MANY_DECIMALS'
     | 'AMOUNT_TOO_LARGE'
     | 'INSUFFICIENT_FUNDS'
+    | 'SAME_ACCOUNT'
+    | 'UNKNOWN_ACCOUNT'
+    | 'NO_RECIPIENT'
   message: string
 }
 
@@ -19,6 +22,11 @@ export interface TransactionMeta {
   id: string
   createdAt: string
   description?: string
+  counterparty?: string
+}
+
+export function isCredit(type: TransactionType): boolean {
+  return type === 'deposit' || type === 'transfer-in'
 }
 
 export const MAX_TRANSACTION_IN_CENTS = 1_000_000_00
@@ -110,7 +118,7 @@ export function projectedAnnualInterestInCents(account: Account): number {
   return Math.round(account.balanceInCents * account.interestRate)
 }
 
-function validateAmount(amountInCents: number): Result<number> {
+export function validateAmount(amountInCents: number): Result<number> {
   if (!Number.isInteger(amountInCents)) {
     return err('INVALID_AMOUNT', 'Amount must be a whole number of cents.')
   }
@@ -126,26 +134,31 @@ function validateAmount(amountInCents: number): Result<number> {
   return { ok: true, value: amountInCents }
 }
 
-function applyTransaction(
+const defaultDescriptions: Record<TransactionType, string> = {
+  deposit: 'Deposit',
+  withdrawal: 'Withdrawal',
+  'transfer-in': 'Transfer received',
+  'transfer-out': 'Transfer sent',
+}
+
+export function applyTransaction(
   account: Account,
   type: TransactionType,
   amountInCents: number,
   meta: TransactionMeta,
 ): Account {
-  const balanceInCents =
-    type === 'deposit'
-      ? account.balanceInCents + amountInCents
-      : account.balanceInCents - amountInCents
+  const balanceInCents = isCredit(type)
+    ? account.balanceInCents + amountInCents
+    : account.balanceInCents - amountInCents
 
   const transaction: Transaction = {
     id: meta.id,
     type,
     amountInCents,
     balanceAfterInCents: balanceInCents,
-    description:
-      meta.description?.trim() ||
-      (type === 'deposit' ? 'Deposit' : 'Withdrawal'),
+    description: meta.description?.trim() || defaultDescriptions[type],
     createdAt: meta.createdAt,
+    ...(meta.counterparty ? { counterparty: meta.counterparty } : {}),
   }
 
   return {
@@ -155,6 +168,6 @@ function applyTransaction(
   }
 }
 
-function err(code: AccountError['code'], message: string): Result<never> {
+export function err(code: AccountError['code'], message: string): Result<never> {
   return { ok: false, error: { code, message } }
 }
